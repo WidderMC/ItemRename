@@ -20,7 +20,7 @@ To extend the Name:
 
 To make it easier, there's a Website where you can enter the Text and the Style and the Command are created automatically for you.
 
-[The Website]()
+[The Website](https://widdermc.github.io/ItemRename/)
 
 ## Links
 [My Modrinth](https://modrinth.com/user/Widder)
