@@ -1,2 +1,29 @@
+
 # ItemRename
-A simple Rename Mod for Minecraft
+### A simple Mod that lets you Rename Items
+
+To Rename a Item:
+
+    /rename <Text>
+ 
+To extend the Name:
+
+    /rename add <Text>
+
+### Style and Symbols
+- Italic = <>
+- Obfuscated = {}
+- Bold = []
+- Strickethrough = ()
+- Underlined = /|
+- Color = #XXXXXX <-HexCode
+
+To make it easier, there's a Website where you can enter the Text and the Style and the Command are created automatically for you.
+
+[The Website]()
+
+## Links
+[My Modrinth](https://modrinth.com/user/Widder)
+[My Discord](https://discord.com/invite/fy4KuxYKVD)
+## License
+This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
