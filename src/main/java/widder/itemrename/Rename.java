@@ -44,7 +44,7 @@ public class Rename {
             source.sendSuccess(() -> Component.literal("You has to hold an item in their Main Hand"),false);
             return 0;
         }
-        
+
         //Switch between /rename <Text> and /rename add <Text>
         if (add == false) {
             //Apply Style to Text
@@ -53,13 +53,17 @@ public class Rename {
             //Rename Item
             item.set(DataComponents.CUSTOM_NAME, finaltext);
         } else if (add == true) {
-            //Apply Style to Text and Merge it with item name
-            Component itemText = item.get(DataComponents.CUSTOM_NAME);
-            Component newText = ApplyStyle(text);
-            MutableComponent finaltext = itemText.copy().append(newText);
+            try {
+                //Apply Style to Text and Merge it with item name
+                Component itemText = item.get(DataComponents.CUSTOM_NAME);
+                Component newText = ApplyStyle(text);
+                MutableComponent finaltext = itemText.copy().append(newText);
 
-            //Rename Item
-            item.set(DataComponents.CUSTOM_NAME, finaltext);
+                //Rename Item
+                item.set(DataComponents.CUSTOM_NAME, finaltext);
+            } catch (Exception e) {
+                source.sendSuccess(() -> Component.literal("Do /rename <Text> first"), false);
+            }
         }
         return 1;
     }
