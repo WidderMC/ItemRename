@@ -2,10 +2,12 @@
 # ItemRename
 ### A simple Mod that lets you Rename Items
 
+Downlode the mod [here](https://modrinth.com/project/widderitemrename)
+
 To Rename a Item:
 
     /rename <Text>
- 
+
 To extend the Name:
 
     /rename add <Text>
