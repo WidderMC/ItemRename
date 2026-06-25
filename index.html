@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rename Style Editor</title>
+<style>
+  :root {
+    --bg: #1a1a1f;
+    --panel: #232329;
+    --panel-2: #2a2a32;
+    --border: #38383f;
+    --text: #e8e6e3;
+    --text-dim: #9b98a3;
+    --accent: #7c9cff;
+    --accent-dim: #4a5a99;
+    --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin: 0;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .panel-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Editor */
+  #editor {
+    min-height: 120px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 16px;
+    line-height: 1.6;
+    outline: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  #editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  #editor::selection, #editor *::selection {
+    background: rgba(124, 156, 255, 0.35);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: background 0.12s, border-color 0.12s;
+    font-family: var(--sans);
+  }
+
+  .btn:hover {
+    background: #313139;
+    border-color: #46464f;
+  }
+
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn.active-style {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+  }
+
+  .btn-icon {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 12px;
+    opacity: 0.75;
+  }
+
+  .btn.danger {
+    color: #ff8c8c;
+  }
+  .btn.danger:hover {
+    background: #3a2424;
+    border-color: #5a3434;
+  }
+
+  /* Color row */
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .color-swatch-input {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .hex-input {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 12px;
+    border-radius: 7px;
+    width: 110px;
+  }
+
+  .hex-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .swatches {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+  }
+
+  .swatch:hover {
+    transform: scale(1.12);
+  }
+
+  /* Obfuscated live preview (mimics Minecraft's flickering glyphs) */
+  .obfuscated-live {
+    background: #3a3a44;
+    border-radius: 3px;
+    font-family: var(--mono);
+  }
+
+  /* Rainbow gradient row */
+  .rainbow-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .rainbow-row label {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  #fullCommand {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .command-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .command-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .command-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--sans);
+  }
+
+  .command-label.over-limit {
+    color: #ff8c8c;
+  }
+
+  .command-copy-btn {
+    font-size: 12px;
+    padding: 5px 11px;
+  }
+
+  .command-code {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .hint code {
+    background: var(--panel-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: var(--mono);
+  }
+
+  .order-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .order-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 5px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Rename Style Editor</h1>
+    <p>Write your text, select parts of it to style, then copy the commands below.</p>
+  </header>
+
+  <!-- Editor -->
+  <div class="panel">
+    <div class="panel-label">
+      <span>Text</span>
+      <button class="btn danger" id="clearBtn" style="padding:5px 10px;font-size:11px;">Clear all</button>
+    </div>
+    <div id="editor" contenteditable="true" data-placeholder="Write your text here..."></div>
+
+    <div class="toolbar">
+      <button class="btn" data-style="italic"><span class="btn-icon">&lt;&gt;</span> Italic</button>
+      <button class="btn" data-style="obfuscated"><span class="btn-icon">{ }</span> Obfuscated</button>
+      <button class="btn" data-style="bold"><span class="btn-icon">[ ]</span> Bold</button>
+      <button class="btn" data-style="strikethrough"><span class="btn-icon">( )</span> Strikethrough</button>
+      <button class="btn" data-style="underlined"><span class="btn-icon">/ |</span> Underlined</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="color-row">
+        <input type="color" id="colorPicker" class="color-swatch-input" value="#aaaaaa">
+        <input type="text" id="hexInput" class="hex-input" value="#AAAAAA" maxlength="7">
+        <button class="btn" id="applyColorBtn">Apply color</button>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div class="rainbow-row">
+        <label>🌈 Rainbow:</label>
+        <input type="color" id="rainbowStartPicker" class="color-swatch-input" value="#ff0000">
+        <input type="text" id="rainbowStartHex" class="hex-input" value="#FF0000" maxlength="7">
+        <span style="color:var(--text-dim);">→</span>
+        <input type="color" id="rainbowEndPicker" class="color-swatch-input" value="#aa00ff">
+        <input type="text" id="rainbowEndHex" class="hex-input" value="#AA00FF" maxlength="7">
+        <button class="btn" id="applyRainbowBtn">Apply gradient</button>
+      </div>
+    </div>
+
+    <div class="hint">
+      Select text, then click a style button. Nesting order when overlapping: Color → Italic → Obfuscated → Bold → Strikethrough → Underlined. Default color (applies at the start and anywhere without its own color): <code>#FFFFFF</code>. Obfuscated text flickers like in Minecraft whenever the editor isn't focused.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">
+      <span>Commands</span>
+    </div>
+    <div id="fullCommand"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_COLOR = '#FFFFFF';
+const editor = document.getElementById('editor');
+const fullCommandEl = document.getElementById('fullCommand');
+const hexInput = document.getElementById('hexInput');
+const colorPicker = document.getElementById('colorPicker');
+
+// Style wrapper definitions, applied in this fixed nesting order
+// when generating output: color -> italic -> obfuscated -> bold -> strikethrough -> underlined
+const WRAP_ORDER = ['italic', 'obfuscated', 'bold', 'strikethrough', 'underlined'];
+const WRAPPERS = {
+  italic:        { open: '<', close: '>' },
+  obfuscated:    { open: '{', close: '}' },
+  bold:          { open: '[', close: ']' },
+  strikethrough: { open: '(', close: ')' },
+  underlined:    { open: '/', close: '|' }
+};
+
+const palette = ['#FFFFFF', '#AAAAAA', '#555555', '#FF5555', '#FFAA00', '#FFFF55', '#55FF55', '#55FFFF', '#5555FF', '#FF55FF', '#AA00AA', '#00AAAA'];
+const swatchContainer = document.getElementById('swatches');
+palette.forEach(c => {
+  const s = document.createElement('div');
+  s.className = 'swatch';
+  s.style.background = c;
+  s.title = c;
+  s.addEventListener('click', () => {
+    hexInput.value = c;
+    colorPicker.value = c;
+    applyColor(c);
+  });
+  swatchContainer.appendChild(s);
+});
+
+colorPicker.addEventListener('input', () => {
+  hexInput.value = colorPicker.value.toUpperCase();
+});
+
+document.getElementById('applyColorBtn').addEventListener('click', () => {
+  applyColor(normalizeHex(hexInput.value));
+});
+
+const rainbowStartPicker = document.getElementById('rainbowStartPicker');
+const rainbowStartHex = document.getElementById('rainbowStartHex');
+const rainbowEndPicker = document.getElementById('rainbowEndPicker');
+const rainbowEndHex = document.getElementById('rainbowEndHex');
+
+rainbowStartPicker.addEventListener('input', () => {
+  rainbowStartHex.value = rainbowStartPicker.value.toUpperCase();
+});
+rainbowEndPicker.addEventListener('input', () => {
+  rainbowEndHex.value = rainbowEndPicker.value.toUpperCase();
+});
+
+document.getElementById('applyRainbowBtn').addEventListener('click', () => {
+  applyRainbow(normalizeHex(rainbowStartHex.value), normalizeHex(rainbowEndHex.value));
+});
+
+function normalizeHex(v) {
+  v = v.trim();
+  if (!v.startsWith('#')) v = '#' + v;
+  return v.toUpperCase();
+}
+
+function isValidHex(v) {
+  return /^#([0-9A-Fa-f]{6})$/.test(v);
+}
+
+// --- Color interpolation helpers (for the rainbow / gradient feature) ---
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16)
+  };
+}
+
+function rgbToHex(r, g, b) {
+  const toHex = (n) => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, '0');
+  return '#' + (toHex(r) + toHex(g) + toHex(b)).toUpperCase();
+}
+
+function interpolateColor(startHex, endHex, t) {
+  // t in [0, 1]
+  const a = hexToRgb(startHex);
+  const b = hexToRgb(endHex);
+  const r = a.r + (b.r - a.r) * t;
+  const g = a.g + (b.g - a.g) * t;
+  const bl = a.b + (b.b - a.b) * t;
+  return rgbToHex(r, g, bl);
+}
+
+function gradientColors(startHex, endHex, count) {
+  if (count <= 1) return [startHex];
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    colors.push(interpolateColor(startHex, endHex, t));
+  }
+  return colors;
+}
+
+// Before ANY DOM-mutating operation (applying a style, a color, rainbow, or
+// deleting), we must restore every obfuscated span's visible text to its real
+// content first. Otherwise extractContents()/cloning could "freeze in" the
+// currently-displayed random glyphs as if they were the real text, silently
+// corrupting the underlying content.
+
+// After extracting a (sub-)selection out of an obfuscated span via
+// range.extractContents(), the original span may be left behind completely
+// empty (if its whole content was extracted) — but it still carries
+// data-original/obfuscated-live, which would otherwise get rendered as an
+// empty-but-"real" obfuscated run. Strip any such now-empty spans so they
+// don't leak phantom content into the generated code.
+function cleanupEmptyObfuscatedSpans() {
+  editor.querySelectorAll('.obfuscated-live').forEach(span => {
+    if (span.textContent.length === 0) {
+      span.remove();
+    }
+  });
+  // Also drop any color/style wrapper spans left completely empty after an
+  // extractContents() call took their text content elsewhere (this happens
+  // when re-selecting text that's already wrapped, and applying a new style
+  // to it — the old wrapper can be left behind empty, but still in the DOM).
+  editor.querySelectorAll('span[data-color], span[data-style]').forEach(span => {
+    if (span.textContent.length === 0 && !span.classList.contains('obfuscated-live')) {
+      span.remove();
+    }
+  });
+}
+
+// Safety net: re-apply each color span's inline color from its data-color
+// attribute. Browsers can, in some edge cases (e.g. extractContents() on a
+// selection that crosses a styled boundary), end up cloning an element
+// without faithfully preserving its inline style attribute. Since data-color
+// is set independently of style.color and never touched by extraction, we
+// can always restore the correct visual color from it after any DOM edit.
+function resyncColorSpans() {
+  editor.querySelectorAll('span[data-color]').forEach(span => {
+    if (span.style.color !== span.dataset.color) {
+      span.style.color = span.dataset.color;
+    }
+  });
+  // Same safety idea for obfuscated spans: any span tagged as the obfuscated
+  // style must always carry the obfuscated-live class (which the flicker
+  // animation and active-span detection key off of), and vice versa.
+  editor.querySelectorAll('span[data-style="obfuscated"]').forEach(span => {
+    if (!span.classList.contains('obfuscated-live')) {
+      span.classList.add('obfuscated-live');
+      if (span.dataset.original === undefined) {
+        span.dataset.original = span.textContent;
+      }
+    }
+  });
+}
+
+function restoreAllObfuscatedText() {
+  // Restore every text node inside any obfuscated span back to its real
+  // value, using the WeakMap the animation maintains. Critically, we set
+  // .nodeValue on the EXISTING text node (not .textContent on the span),
+  // which never destroys element structure and never invalidates an active
+  // Selection/Range that happens to point into these nodes.
+  const liveSpans = editor.querySelectorAll('.obfuscated-live');
+  liveSpans.forEach(span => {
+    const textNodes = collectTextNodes(span, []);
+    textNodes.forEach(tn => {
+      if (realTextByNode.has(tn)) {
+        tn.nodeValue = realTextByNode.get(tn);
+      }
+    });
+  });
+}
+
+// --- Selection-based style application using span wrapping in the contenteditable ---
+
+// We track the last valid (non-collapsed) selection made inside the editor.
+// This is necessary because clicking on the hex input / color button / swatches
+// moves browser focus away from the editor, which clears window.getSelection().
+let savedRange = null;
+
+function rememberSelectionIfInsideEditor() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (editor.contains(range.commonAncestorContainer) && !range.collapsed) {
+    savedRange = range.cloneRange();
+  }
+}
+
+document.addEventListener('selectionchange', rememberSelectionIfInsideEditor);
+editor.addEventListener('mouseup', rememberSelectionIfInsideEditor);
+editor.addEventListener('keyup', rememberSelectionIfInsideEditor);
+
+function getSelectionRange() {
+  // Prefer a live, non-collapsed selection that's currently inside the editor.
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const liveRange = sel.getRangeAt(0);
+    if (editor.contains(liveRange.commonAncestorContainer) && !liveRange.collapsed) {
+      return liveRange;
+    }
+  }
+  // Fall back to the last remembered selection (e.g. after clicking the hex input/button).
+  if (savedRange && editor.contains(savedRange.commonAncestorContainer)) {
+    return savedRange;
+  }
+  return null;
+}
+
+// After applying a style or color, clean up any color span fragments.
+// If a color span is now empty (because its content was extracted), remove it.
+// This happens when extractContents() partially cuts a span.
+function cleanupColorSpanFragments() {
+  editor.querySelectorAll('span[data-color]').forEach(span => {
+    // Empty color span = leftover fragment, remove it
+    if (span.textContent.trim().length === 0) {
+      span.remove();
+    }
+  });
+}
+
+function applyStyleToSelection(styleName) {
+  // Must restore obfuscated text BEFORE reading the selection — see the note
+  // in applyColor() for why the order matters.
+  restoreAllObfuscatedText();
+  const range = getSelectionRange();
+  if (!range) {
+    alert('Please select some text first.');
+    return;
+  }
+
+  const span = document.createElement('span');
+  span.dataset.style = styleName;
+  span.className = 'style-' + styleName;
+  // visual hint
+  if (styleName === 'bold') span.style.fontWeight = '700';
+  if (styleName === 'italic') span.style.fontStyle = 'italic';
+  if (styleName === 'strikethrough') span.style.textDecoration = 'line-through';
+  if (styleName === 'underlined') span.style.textDecoration = (span.style.textDecoration ? span.style.textDecoration + ' ' : '') + 'underline';
+
+  try {
+    const contents = range.extractContents();
+    span.appendChild(contents);
+    range.insertNode(span);
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+  cleanupEmptyObfuscatedSpans();
+  cleanupColorSpanFragments();
+  resyncColorSpans();
+
+  // Mark this span as a live obfuscated region so the flicker animation
+  // and the active-span detection (see getActiveObfuscatedSpan) pick it up.
+  // data-original is kept as a convenience snapshot for inspection — the
+  // actual source of truth for rendering/output is the per-text-node
+  // realTextByNode WeakMap, which survives nested styles correctly.
+  if (styleName === 'obfuscated') {
+    span.dataset.original = span.textContent;
+    span.classList.add('obfuscated-live');
+  }
+
+  // restore selection to the wrapped span content
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.addRange(newRange);
+  savedRange = newRange.cloneRange();
+
+  updateOutput();
+}
+
+// When applying a NEW color to a selection, any color spans that were
+// already inside that selection must be stripped out — otherwise a nested
+// data-color span "wins" over its new parent wrapper in the styles lookup,
+// and that inner text visually keeps its OLD color instead of taking the
+// new one. This unwraps every data-color span found inside the given
+// fragment/node, replacing each with its plain text content (recursively,
+// since a color span could itself contain further nested elements like
+// bold/italic wrappers — those are kept, only the data-color spans go).
+function stripNestedColorSpans(root) {
+  const colorSpans = Array.from(root.querySelectorAll ? root.querySelectorAll('[data-color]') : []);
+  colorSpans.forEach(span => {
+    const parent = span.parentNode;
+    if (!parent) return;
+    while (span.firstChild) {
+      parent.insertBefore(span.firstChild, span);
+    }
+    parent.removeChild(span);
+  });
+}
+
+function applyColor(hex) {
+  if (!isValidHex(hex)) {
+    alert('Invalid hex code. Format: #RRGGBB');
+    return;
+  }
+  // Must restore obfuscated text BEFORE reading the selection: restoring
+  // replaces text nodes inside obfuscated spans, which would invalidate a
+  // Range captured beforehand (it also re-applies the selection at the same
+  // plain-text offsets, so getSelectionRange() below sees a fresh, valid Range).
+  restoreAllObfuscatedText();
+  const range = getSelectionRange();
+  if (!range) {
+    alert('Please select some text first.');
+    return;
+  }
+  const span = document.createElement('span');
+  span.dataset.color = hex;
+  span.style.color = hex;
+
+  try {
+    const contents = range.extractContents();
+    stripNestedColorSpans(contents);
+    span.appendChild(contents);
+    range.insertNode(span);
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+  cleanupEmptyObfuscatedSpans();
+  resyncColorSpans();
+
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.addRange(newRange);
+  savedRange = newRange.cloneRange();
+
+  updateOutput();
+}
+
+function applyRainbow(startHex, endHex) {
+  if (!isValidHex(startHex) || !isValidHex(endHex)) {
+    alert('Invalid hex code. Format: #RRGGBB');
+    return;
+  }
+  // Must restore obfuscated text BEFORE reading the selection — see the note
+  // in applyColor() for why the order matters.
+  restoreAllObfuscatedText();
+  const range = getSelectionRange();
+  if (!range) {
+    alert('Please select some text first.');
+    return;
+  }
+
+  let contents;
+  try {
+    contents = range.extractContents();
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+
+  const text = contents.textContent;
+  if (text.length === 0) {
+    // nothing to color, put it back as-is
+    range.insertNode(contents);
+    updateOutput();
+    return;
+  }
+
+  const colors = gradientColors(startHex, endHex, text.length);
+
+  // Walk the extracted fragment and replace each TEXT NODE with one color
+  // span per character, leaving any element wrappers around that text (e.g.
+  // an obfuscated span, a bold span) exactly where they are. This is what
+  // lets rainbow coloring layer on top of existing styles instead of
+  // flattening them away.
+  let charIndex = 0;
+  function colorizeTextNodes(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const frag = document.createDocumentFragment();
+      for (const ch of node.textContent) {
+        const charSpan = document.createElement('span');
+        const c = colors[charIndex++];
+        charSpan.dataset.color = c;
+        charSpan.style.color = c;
+        charSpan.textContent = ch;
+        frag.appendChild(charSpan);
+      }
+      node.replaceWith(frag);
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      // Snapshot childNodes first since replaceWith() mutates the live list.
+      Array.from(node.childNodes).forEach(colorizeTextNodes);
+    }
+  }
+  Array.from(contents.childNodes).forEach(colorizeTextNodes);
+
+  // Remember the fragment's first/last node before insertion empties it, so
+  // we can re-select the newly-colored range afterwards.
+  const firstNode = contents.firstChild;
+  const lastNode = contents.lastChild;
+
+  range.insertNode(contents);
+  cleanupEmptyObfuscatedSpans();
+  resyncColorSpans();
+
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  if (firstNode && lastNode && firstNode.parentNode && lastNode.parentNode) {
+    const newRange = document.createRange();
+    newRange.setStartBefore(firstNode);
+    newRange.setEndAfter(lastNode);
+    sel.addRange(newRange);
+    savedRange = newRange.cloneRange();
+  }
+
+  updateOutput();
+}
+
+document.querySelectorAll('.btn[data-style]').forEach(btn => {
+  btn.addEventListener('click', () => applyStyleToSelection(btn.dataset.style));
+});
+
+// --- Obfuscated live preview animation (mimics vanilla Minecraft) ---
+// Rule: obfuscated spans flicker through random glyphs continuously, all the
+// time — exactly like the in-game "magic" formatting. The only exception is
+// the single span the text cursor is currently inside of (if any): that one
+// shows its real text so the user can type/edit it without fighting the
+// animation. Every other obfuscated span keeps flickering regardless.
+//
+// Obfuscated spans can contain nested element children (e.g. a color span
+// layered inside an obfuscated run). To flicker correctly without ever
+// destroying that nested structure, we never touch element children or
+// overwrite a span's full textContent. Instead we walk down to the actual
+// TEXT NODES inside each obfuscated span and rewrite only their nodeValue,
+// remembering each text node's real content in a WeakMap (keyed by the node
+// itself) so it survives across animation ticks and can always be restored
+// exactly, regardless of how deeply it's nested.
+const OBFUSCATED_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+const realTextByNode = new WeakMap();
+
+function randomGlyphsLike(text) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === ' ' || text[i] === '\n') {
+      out += text[i];
+    } else {
+      out += OBFUSCATED_CHARS[Math.floor(Math.random() * OBFUSCATED_CHARS.length)];
+    }
+  }
+  return out;
+}
+
+function collectTextNodes(root, out) {
+  for (const child of root.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      out.push(child);
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      collectTextNodes(child, out);
+    }
+  }
+  return out;
+}
+
+function getActiveObfuscatedSpan() {
+  // Returns the .obfuscated-live span the caret is currently inside of,
+  // so we can leave that one showing real text while typing.
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  if (!editor.contains(document.activeElement) && document.activeElement !== editor) return null;
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  if (node && node.closest) return node.closest('.obfuscated-live');
+  return null;
+}
+
+function tickObfuscatedAnimation() {
+  // Safety net: keep every color span's visual color in sync with its
+  // data-color attribute on every tick, regardless of obfuscated content.
+  // This guards against any edge case where a browser DOM operation clones
+  // or moves a span without faithfully preserving its inline style.
+  resyncColorSpans();
+
+  const spans = editor.querySelectorAll('.obfuscated-live');
+  if (spans.length === 0) return;
+  const activeSpan = (document.activeElement === editor) ? getActiveObfuscatedSpan() : null;
+
+  spans.forEach(span => {
+    const textNodes = collectTextNodes(span, []);
+    const showReal = (span === activeSpan);
+    textNodes.forEach(tn => {
+      if (!realTextByNode.has(tn)) {
+        realTextByNode.set(tn, tn.nodeValue);
+      }
+      const real = realTextByNode.get(tn);
+      tn.nodeValue = showReal ? real : randomGlyphsLike(real);
+    });
+  });
+}
+
+setInterval(tickObfuscatedAnimation, 90);
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('Clear all text?')) {
+    editor.innerHTML = '';
+    updateOutput();
+  }
+});
+
+// --- Walk the DOM tree of the editor and build the style-coded string ---
+
+function activeStylesOf(node, inherited) {
+  // collect color + boolean styles inherited down the chain to this node
+  let styles = Object.assign({}, inherited);
+  if (node.dataset) {
+    if (node.dataset.color) styles.color = node.dataset.color;
+    if (node.dataset.style) styles[node.dataset.style] = true;
+  }
+  return styles;
+}
+
+function walk(node, inherited, segments) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    // If this text node currently belongs to a flickering obfuscated run,
+    // its live nodeValue may be randomized glyphs. The real content is
+    // tracked per-text-node in realTextByNode regardless of nesting depth,
+    // so this works correctly even when the text node sits inside a nested
+    // color/style span within an obfuscated block.
+    const text = realTextByNode.has(node) ? realTextByNode.get(node) : node.textContent;
+    if (text.length > 0) {
+      segments.push({ text, styles: Object.assign({}, inherited) });
+    }
+    return;
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+  // <br> or block-level line breaks become newlines
+  if (node.tagName === 'BR') {
+    segments.push({ text: '\n', styles: Object.assign({}, inherited), isBreak: true });
+    return;
+  }
+
+  const newInherited = activeStylesOf(node, inherited);
+  const isBlock = (node.tagName === 'DIV' || node.tagName === 'P');
+
+  for (const child of node.childNodes) {
+    walk(child, newInherited, segments);
+  }
+
+  if (isBlock && node.nextSibling) {
+    segments.push({ text: '\n', styles: Object.assign({}, inherited), isBreak: true });
+  }
+}
+
+function buildSegments() {
+  const segments = [];
+  for (const child of editor.childNodes) {
+    walk(child, {}, segments);
+  }
+  return segments;
+}
+
+function wrapWithStyles(innerText, styles, colorPrefix) {
+  // colorPrefix (e.g. "#6600AA" or "") is placed innermost, right before the text,
+  // inside all the style brackets: [#6600AAWelt]
+  let result = colorPrefix + innerText;
+  for (const key of WRAP_ORDER) {
+    if (styles[key]) {
+      const w = WRAPPERS[key];
+      result = w.open + result + w.close;
+    }
+  }
+  return result;
+}
+
+// --- Building the style code from segments, and splitting it across
+// multiple /rename + /rename add commands (each capped at 256 chars total,
+// including the command prefix) ---
+
+const RENAME_PREFIX = '/rename ';
+const RENAME_ADD_PREFIX = '/rename add ';
+const MAX_COMMAND_LENGTH = 256;
+const RESET_JUMP_COLOR = '#000000';
+
+// Renders one "run" of text (a single segment) into its style-coded form,
+// given the color that's already active from a previous run (currentColorRef
+// is a 1-element array used as an in/out parameter so callers can chain runs).
+function renderSegment(seg, currentColorRef) {
+  const segColor = seg.styles.color || DEFAULT_COLOR;
+  let colorPrefix = '';
+  if (segColor !== currentColorRef[0]) {
+    colorPrefix = segColor;
+    currentColorRef[0] = segColor;
+  }
+  return wrapWithStyles(seg.text, seg.styles, colorPrefix);
+}
+
+// Splits raw segments (one per DOM text run) down into per-character atoms.
+// This is the unit we're allowed to break a command at: cutting between two
+// characters of the SAME segment is fine (no style tag is left half-open),
+// but we still group consecutive atoms with identical styles together when
+// rendering so style tags wrap a whole run, not single letters.
+function expandToCharAtoms(segments) {
+  const atoms = [];
+  for (const seg of segments) {
+    if (seg.isBreak) {
+      atoms.push({ char: '\n', styles: seg.styles, isBreak: true });
+      continue;
+    }
+    for (const ch of seg.text) {
+      atoms.push({ char: ch, styles: seg.styles });
+    }
+  }
+  return atoms;
+}
+
+// Re-groups consecutive atoms that share the exact same style set back into
+// runs, so wrapWithStyles() emits one clean tag per run instead of one tag
+// per character.
+function regroupAtomsIntoRuns(atoms) {
+  const runs = [];
+  for (const atom of atoms) {
+    const last = runs[runs.length - 1];
+    const isForceColor = atom.forceColor !== undefined;
+    const lastIsForceColor = last && last.forceColor !== undefined;
+    if (last && !atom.isBreak && !last.isBreak && !isForceColor && !lastIsForceColor && stylesEqual(last.styles, atom.styles)) {
+      last.text += atom.char;
+    } else if (isForceColor) {
+      runs.push({ text: '', styles: atom.styles, isBreak: false, forceColor: atom.forceColor });
+    } else {
+      runs.push({ text: atom.char, styles: atom.styles, isBreak: !!atom.isBreak });
+    }
+  }
+  return runs;
+}
+
+function stylesEqual(a, b) {
+  const keys = ['color', 'italic', 'obfuscated', 'bold', 'strikethrough', 'underlined'];
+  for (const k of keys) {
+    if (!!a[k] !== !!b[k]) return false;
+    if (k === 'color' && a.color !== b.color) return false;
+  }
+  return true;
+}
+
+// Wraps the first/last visible character of a chunk's rendered text in a
+// quick color jump (to #000000 and immediately back) if that character is a
+// leading/trailing space — Minecraft trims leading/trailing whitespace from
+// command arguments otherwise, silently eating the space. Inserting a color
+// code adjacent to the space prevents it from being trimmed, without
+// otherwise touching any style tags.
+function guardEdgeSpaces(rawAtomsForChunk, chunkRenderedFn) {
+  if (rawAtomsForChunk.length === 0) return '';
+  const firstAtom = rawAtomsForChunk[0];
+  const lastAtom = rawAtomsForChunk[rawAtomsForChunk.length - 1];
+  const startsWithSpace = firstAtom.char === ' ';
+  const endsWithSpace = rawAtomsForChunk.length > 0 && lastAtom.char === ' ';
+
+  // We render normally, then patch in the guard color jump at the boundary.
+  // Simplest reliable approach: temporarily insert a synthetic zero-width
+  // color-only atom right before/after the edge space, sharing that space's
+  // styles, with no visible character — just a color stamp.
+  let atoms = rawAtomsForChunk;
+  if (startsWithSpace) {
+    atoms = [{ char: '', styles: Object.assign({}, firstAtom.styles), forceColor: RESET_JUMP_COLOR }]
+      .concat(atoms)
+      .concat([{ char: '', styles: Object.assign({}, firstAtom.styles), forceColor: firstAtom.styles.color || DEFAULT_COLOR }]);
+  }
+  if (endsWithSpace) {
+    atoms = atoms.concat([
+      { char: '', styles: Object.assign({}, lastAtom.styles), forceColor: RESET_JUMP_COLOR },
+      { char: '', styles: Object.assign({}, lastAtom.styles), forceColor: lastAtom.styles.color || DEFAULT_COLOR }
+    ]);
+  }
+  return chunkRenderedFn(atoms);
+}
+
+// Renders a list of atoms (after regrouping into runs) to a style-code
+// string, honoring forceColor markers used by guardEdgeSpaces.
+function renderAtomsChunk(atoms, startColorRef) {
+  const runs = regroupAtomsIntoRuns(atoms);
+  let out = '';
+  for (const run of runs) {
+    if (run.isBreak) {
+      out += '\n';
+      continue;
+    }
+    if (run.forceColor !== undefined) {
+      // zero-width color stamp
+      if (run.forceColor !== startColorRef[0]) {
+        out += run.forceColor;
+        startColorRef[0] = run.forceColor;
+      }
+      continue;
+    }
+    out += renderSegment(run, startColorRef);
+  }
+  return out;
+}
+
+// Estimate the rendered length contribution of a single atom in isolation
+// (worst case, ignoring color-merging with neighbors) — used to decide where
+// a chunk boundary is allowed/needed. We measure precisely by actually
+// rendering candidate chunks rather than estimating, for correctness.
+
+function buildCommandList() {
+  const segments = buildSegments();
+  const atoms = expandToCharAtoms(segments);
+
+  const commands = [];
+  let colorRef = [null]; // color state carried across the ENTIRE output, continuous across command boundaries
+  let i = 0;
+  let isFirstCommand = true;
+
+  while (i < atoms.length) {
+    const prefix = isFirstCommand ? RENAME_PREFIX : RENAME_ADD_PREFIX;
+    const budget = MAX_COMMAND_LENGTH - prefix.length;
+
+    // Greedily add whole atoms (each atom = one literal character, never a
+    // partial style tag) until adding the next one would exceed the budget.
+    // We render speculatively to measure the true length, since color codes
+    // are only emitted on change and tags depend on run grouping.
+    let chunkAtoms = [];
+    let testColorRef = [colorRef[0]];
+    let lastGoodRendered = '';
+    let j = i;
+
+    while (j < atoms.length) {
+      const candidateAtoms = atoms.slice(i, j + 1);
+      const probeColorRef = [colorRef[0]];
+      const probeRendered = guardEdgeSpaces(candidateAtoms, (a) => renderAtomsChunk(a, probeColorRef));
+
+      if (probeRendered.length > budget) {
+        if (chunkAtoms.length === 0) {
+          // Single atom alone already exceeds the budget (extremely unlikely
+          // edge case, e.g. a huge run forced by guard atoms). Force it in
+          // anyway to guarantee progress and avoid an infinite loop.
+          chunkAtoms = candidateAtoms;
+          lastGoodRendered = probeRendered;
+          j++;
+        }
+        break;
+      }
+      chunkAtoms = candidateAtoms;
+      lastGoodRendered = probeRendered;
+      j++;
+    }
+
+    const finalColorRef = [colorRef[0]];
+    const rendered = guardEdgeSpaces(chunkAtoms, (a) => renderAtomsChunk(a, finalColorRef));
+    colorRef[0] = finalColorRef[0];
+
+    commands.push({ prefix, code: rendered, full: prefix + rendered });
+
+    i = j;
+    isFirstCommand = false;
+    if (chunkAtoms.length === 0) break; // safety: avoid infinite loop
+  }
+
+  if (commands.length === 0) {
+    commands.push({ prefix: RENAME_PREFIX, code: '', full: RENAME_PREFIX });
+  }
+
+  return commands;
+}
+
+function updateOutput() {
+  const commands = buildCommandList();
+  renderCommandList(commands);
+}
+
+function renderCommandList(commands) {
+  fullCommandEl.innerHTML = '';
+  commands.forEach((cmd, idx) => {
+    const group = document.createElement('div');
+    group.className = 'command-group';
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'command-header';
+
+    const label = document.createElement('div');
+    label.className = 'command-label';
+    label.textContent = `Command ${idx + 1}`;
+    if (cmd.full.length > MAX_COMMAND_LENGTH) label.classList.add('over-limit');
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn command-copy-btn';
+    copyBtn.textContent = '📋 Copy';
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(cmd.full);
+        copyBtn.textContent = '✓ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 1400);
+      } catch (e) {
+        alert('Copy failed.');
+      }
+    });
+
+    headerRow.appendChild(label);
+    headerRow.appendChild(copyBtn);
+
+    const codeEl = document.createElement('div');
+    codeEl.className = 'command-code';
+    codeEl.textContent = cmd.full;
+
+    group.appendChild(headerRow);
+    group.appendChild(codeEl);
+    fullCommandEl.appendChild(group);
+  });
+}
+
+editor.addEventListener('input', updateOutput);
+editor.addEventListener('keyup', updateOutput);
+editor.addEventListener('mouseup', updateOutput);
+
+updateOutput();
+</script>
+</body>
+</html>
